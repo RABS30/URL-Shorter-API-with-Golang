@@ -1,0 +1,199 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "URL Shorter RESTful API",
+    "version": "1.0",
+    "description": "API for URL Shorter",
+    "contact": {
+      "name": "RABS",
+      "email": "rabs@gmail.com",
+      "url": "http://rabs.my.id"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://rabs.my.id/v1",
+      "description": "URL Shorter"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Create New User",
+        "description": "Create new user using email and password",
+        "requestBody": {
+            "$ref": "#/components/requestBodies/userCredentialsRequestBody"
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserResponse"
+                        }
+                      }
+                    }
+                  ]
+                }   
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+                "application/json":{
+                    "schema":{
+                        "$ref": "#/components/schemas/ApiResponse"
+                    }
+                }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+        "post": {
+            "tags": ["Authentication"],
+            "summary": "User login to access API",
+             "description": "User login using email and password",
+             "requestBody": {
+                "$ref": "#/components/requestBodies/userCredentialsRequestBody"
+             },
+             "responses": {
+                "200": {
+                    "description": "Success Login",
+                    "content": {
+                        "application/json":{
+                            "schema":{
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ApiResponse"
+                                    },
+                                    {
+                                        "type":"object",
+                                        "properties": {
+                                            "data": {
+                                                "$ref": "#/components/schemas/LoginResponse"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    "description": "Failed Login",
+                    "content": {
+                        "application/json":{
+                            "schema":{
+                                "$ref": "#/components/schemas/ApiResponse"
+                            }
+                        }
+                    }
+                }
+             }
+        }
+    },
+    "/user/me":{
+        "get":{
+            "tags": ["User"],
+            "description": "Show all information about user. Like email, id and all shorter urls",
+            "summary": "Get user information",
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ]
+        }
+    }
+  },
+  "components": {
+    "requestBodies": {
+        "userCredentialsRequestBody":{
+            "required": true,
+            "content": {
+                "application/json": {
+                    "schema" :{
+                        "$ref": "#/components/schemas/UserCredentialsRequest"
+                    }
+                }
+            }
+        }
+    },
+    "schemas": {
+      "UserCredentialsRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@gmail.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "admin123"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "UserResponse":{
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "email": {
+            "type": "string",
+            "example": "admin@gmail.com"
+          }
+        },
+        "required": ["id", "email"]
+      },
+      "ApiResponse":{
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Success create new user"
+          },
+          "data": {
+            "type": ["object", "null"]
+          }
+        },
+        "required": ["message", "data"]
+      },
+      "LoginResponse":{
+        "type":"object",
+        "properties": {
+            "access_token": {
+                "type": "string"
+            },
+            "user": {
+                "$ref": "#/components/schemas/UserResponse"
+            }
+        },
+        "required": ["access_token", "user"]
+      }
+    },
+    "securitySchemes": {
+        "BearerAuth":{
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+  }
+}
