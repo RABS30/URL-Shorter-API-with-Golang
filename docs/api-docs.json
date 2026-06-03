@@ -57,6 +57,16 @@
                     }
                 }
             }
+          },
+          "409": {
+            "description": "Email already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }   
+              }
+            }
           }
         }
       }
@@ -108,17 +118,344 @@
     "/user/me":{
         "get":{
             "tags": ["User"],
-            "description": "Show all information about user. Like email, id and all shorter urls",
+            "description": "Get profile information of the currently authenticated user",
             "summary": "Get user information",
             "security": [
                 {
                     "BearerAuth": []
                 }
-            ]
+            ],
+            "responses": {
+              "200":{
+                "description": "Get all information about user",
+                "content": {
+                  "application/json":{
+                    "schema":{
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/ApiResponse"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "data": {
+                                  "$ref": "#/components/schemas/UserResponse"
+                              }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "401": {
+                "$ref": "#/components/responses/unauthorized"
+              }
+            }
         }
+    },
+    "/urls": {
+      "get":{
+        "tags": ["URLs"],
+        "description": "Get all shortened urls",
+        "summary": "Get all urls",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get all shortened urls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ShortUrlList"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": ["URLs"],
+        "description": "Create new short urls",
+        "summary": "new short urls created",
+        "security": [
+          {
+            "BearerAuth":[]
+          }
+        ],
+        "requestBody":{
+          "required": true,
+          "content": {
+            "application/json":{
+              "schema":{
+                "$ref": "#/components/schemas/ShortUrlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201":{
+            "description": "Short URL created successfully",
+            "content": {
+              "application/json":{
+                "schema":{
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ShortUrlResponse"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        }
+      }
+    },
+    "/urls/{id}":{
+      "get": {
+        "tags": ["URLs"],
+        "security": [
+          {
+            "BearerAuth":[]
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ShortUrlId"
+          }
+        ],
+        "description": "Get specific URLs by id",
+        "summary": "Get specific URLs",
+        "responses": {
+          "200":{
+            "$ref": "#/components/responses/getSpecificURLs"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete specific URLs",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ShortUrlId"
+          }
+        ],
+        "tags": ["URLs"],
+        "description": "Delete shorter URLs",
+        "security": [
+          {
+            "BearerAuth":[]
+          }
+        ],
+        "responses": {
+          "200" :{
+            "description": "Delete URLs successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }   
+      },
+      "patch": {
+        "tags": ["URLs"],
+        "description": "Update specific URLs",
+        "summary": "Update Specific URLs",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ShortUrlId"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody":{
+          "description": "the needed data to update URLs",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShortUrlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/getSpecificURLs"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }
+      }
+    },
+    "/r/{short_code}":{
+      "get": {
+        "tags": ["URLs"],
+        "summary": "Access real URLs",
+        "description": "Access real URLs from shortened URLs",
+        "parameters": [
+          {
+            "name": "short_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type":"string"
+            }
+          }
+        ],
+        "responses": {
+          "301": {
+            "description": "Permanent redirect",
+            "headers": {
+              "Location":{
+                "description": "Original URLs destination",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "Temporary redirect",
+            "headers": {
+              "Location": {
+                "description": "Original URLs destination",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }
+
+      }
     }
   },
   "components": {
+    "responses": {
+      "unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiResponse"
+            }
+          }
+        }
+      },
+      "notFound": {
+        "description": "Content Not Found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiResponse"
+            }
+          }
+        }
+      },
+      "getSpecificURLs": {
+        "description": "Get specific URLs",
+        "content": {
+              "application/json":{
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type":"object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ShortUrlResponse"
+                        }
+                      }
+                    }
+                  ]                  
+                }
+              }
+            }
+      }
+    },
+    "parameters": {
+      "ShortUrlId": {
+        "name": "id",
+        "in": "path",
+        "description": "Short URL identifier",
+        "schema": {
+          "type":"integer",
+          "format": "int64"
+        },
+        "required": true
+      }
+    },
     "requestBodies": {
         "userCredentialsRequestBody":{
             "required": true,
@@ -153,39 +490,90 @@
         "properties": {
           "id": {
             "type": "integer",
+            "format": "int64",
             "example": 1
           },
           "email": {
             "type": "string",
             "example": "admin@gmail.com"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "example": true
           }
         },
-        "required": ["id", "email"]
+        "required": ["id", "email", "is_verified"]
       },
       "ApiResponse":{
         "type": "object",
         "properties": {
           "message": {
             "type": "string",
-            "example": "Success create new user"
-          },
-          "data": {
-            "type": ["object", "null"]
+            "example": "Message because you do something"
           }
         },
-        "required": ["message", "data"]
+        "required": ["message"]
       },
       "LoginResponse":{
         "type":"object",
         "properties": {
             "access_token": {
-                "type": "string"
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             },
             "user": {
                 "$ref": "#/components/schemas/UserResponse"
             }
         },
         "required": ["access_token", "user"]
+      },
+      "ShortUrlResponse":{
+        "type": "object",
+        "properties": {
+          "id": {
+            "type":"integer"
+          },
+          "short_code": {
+            "type": "string"
+          },
+          "original_url": {
+            "type":"string",
+            "format": "uri"
+          },
+          "expired_at": {
+            "type":"string",
+            "format": "date-time",
+            "example": "2026-12-31T23:59:59Z"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-12-31T23:59:59Z"
+          }
+        },
+        "required": ["id", "short_code", "original_url"]
+      },
+      "ShortUrlList":{
+        "type":"object",
+        "properties": {
+          "urls":{
+            "type":"array",
+            "items": {
+              "$ref": "#/components/schemas/ShortUrlResponse"
+            }
+          }
+        }
+      },
+      "ShortUrlRequest": {
+        "type": "object",
+        "properties": {
+          "original_url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com"
+          }
+        },
+        "required": ["original_url"]
       }
     },
     "securitySchemes": {
