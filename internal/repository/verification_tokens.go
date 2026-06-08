@@ -7,14 +7,14 @@ import (
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pashagolub/pgxmock/v5"
 )
 
 type verificationTokenRepository struct {
-	db *pgxpool.Pool
+	db pgxmock.PgxPoolIface
 }
 
-func NewVerificationTokenRepository(db *pgxpool.Pool) domain.VerificationTokenRepository {
+func NewVerificationTokenRepository(db pgxmock.PgxPoolIface) domain.VerificationTokenRepository {
 	return &verificationTokenRepository{
 		db: db,
 	}

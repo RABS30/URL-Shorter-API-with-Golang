@@ -6,14 +6,14 @@ import (
 	"shorter-url/internal/domain"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pashagolub/pgxmock/v5"
 )
 
 type clickEventsRepository struct {
-	db *pgxpool.Pool
+	db pgxmock.PgxPoolIface
 }
 
-func NewClickEventsRepository(db *pgxpool.Pool) domain.ClickEventRepository {
+func NewClickEventsRepository(db pgxmock.PgxPoolIface) domain.ClickEventRepository {
 	return &clickEventsRepository{
 		db: db,
 	}

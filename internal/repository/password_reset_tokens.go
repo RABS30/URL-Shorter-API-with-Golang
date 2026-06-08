@@ -7,14 +7,14 @@ import (
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pashagolub/pgxmock/v5"
 )
 
 type passwordResetTokensRepository struct {
-	db *pgxpool.Pool
+	db pgxmock.PgxPoolIface
 }
 
-func NewPasswordResetTokensRepository(db *pgxpool.Pool) domain.PasswordResetTokensRepository {
+func NewPasswordResetTokensRepository(db pgxmock.PgxPoolIface) domain.PasswordResetTokensRepository {
 	return &passwordResetTokensRepository{
 		db: db,
 	}

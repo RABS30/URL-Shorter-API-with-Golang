@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"shorter-url/internal/domain"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pashagolub/pgxmock/v5"
 )
 
 type shortUrlRepository struct {
-	db *pgxpool.Pool
+	db pgxmock.PgxPoolIface
 }
 
-func NewShortUrlRepository(db *pgxpool.Pool) domain.ShortUrlsRepository {
+func NewShortUrlRepository(db pgxmock.PgxPoolIface) domain.ShortUrlsRepository {
 	return &shortUrlRepository{
 		db: db,
 	}

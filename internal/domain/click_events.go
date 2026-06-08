@@ -11,7 +11,7 @@ type ClickEvent struct {
 	IpAddress  string
 	UserAgent  string
 	Referer    string
-	ClickedAt  string
+	ClickedAt  time.Time
 }
 
 type ClickEventRepository interface {

@@ -5,23 +5,21 @@ import (
 	"fmt"
 	"shorter-url/internal/domain"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pashagolub/pgxmock/v5"
 )
 
 type userRepository struct {
-	db *pgxpool.Pool
+	db pgxmock.PgxPoolIface
 }
 
-func NewUserRepository(db *pgxpool.Pool) domain.UserRepository {
+func NewUserRepository(db pgxmock.PgxPoolIface) domain.UserRepository {
 	return &userRepository{
 		db: db,
 	}
 }
 
 func (u *userRepository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
-	query := `INSERT INTO users(email, password_hash)
-			  VALUES($1, $2) 
-			  RETURNING id, email, password_hash, is_verified, status, created_at`
+	query := `INSERT INTO users(email, password_hash)VALUES($1, $2) RETURNING id, email, password_hash, is_verified, status, created_at`
 
 	err := u.db.QueryRow(ctx, query, user.Email, user.PasswordHash).Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 	if err != nil {
