@@ -22,10 +22,12 @@ func NewPasswordResetTokensRepository(db pgxmock.PgxPoolIface) domain.PasswordRe
 
 func (r *passwordResetTokensRepository) Create(ctx context.Context, passwordResetToken *domain.PasswordResetTokens) (*domain.PasswordResetTokens, error) {
 	query := `INSERT INTO password_reset_tokens (user_id, token, expired_at) VALUES ($1, $2, $3) RETURNING id`
+
 	err := r.db.QueryRow(ctx, query, passwordResetToken.UserId, passwordResetToken.Token, passwordResetToken.ExpiredAt).Scan(&passwordResetToken.Id)
 	if err != nil {
 		return nil, fmt.Errorf("something wrong when create password reset token : %w", err)
 	}
+
 	return passwordResetToken, nil
 }
 
@@ -47,6 +49,7 @@ func (r *passwordResetTokensRepository) Delete(ctx context.Context, id int64) er
 func (r *passwordResetTokensRepository) FindByToken(ctx context.Context, token string) (*domain.PasswordResetTokens, error) {
 	query := "SELECT id, user_id, token, expired_at FROM password_reset_tokens WHERE token = $1"
 	var passwordResetToken domain.PasswordResetTokens
+
 	err := r.db.QueryRow(ctx, query, token).Scan(&passwordResetToken.Id, &passwordResetToken.UserId, &passwordResetToken.Token, &passwordResetToken.ExpiredAt)
 	if err != nil {
 		// Jika errornya adalah karena datanya memang tidak ada

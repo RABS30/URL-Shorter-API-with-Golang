@@ -46,10 +46,10 @@ func (r *clickEventsRepository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *clickEventsRepository) FindById(ctx context.Context, id int64) (*domain.ClickEvent, error) {
-	query := `SELECT id, ip_address, short_url_id, user_agent, referer, clicked_at FROM click_events WHERE id = $1`
+	query := `SELECT id, short_url_id, ip_address, user_agent, referer, clicked_at FROM click_events WHERE id = $1`
 
 	var clickEvent domain.ClickEvent
-	err := r.db.QueryRow(ctx, query, id).Scan(&clickEvent.Id, &clickEvent.IpAddress, &clickEvent.ShortUrlId, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&clickEvent.Id, &clickEvent.ShortUrlId, &clickEvent.IpAddress, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
 	if err != nil {
 		return nil, fmt.Errorf("something wrong when find click event by ID : %w", err)
 	}
@@ -58,10 +58,7 @@ func (r *clickEventsRepository) FindById(ctx context.Context, id int64) (*domain
 }
 
 func (r *clickEventsRepository) FindByShortCode(ctx context.Context, shortCode string) ([]domain.ClickEvent, error) {
-	query := `SELECT ce.id, ce.ip_address, ce.short_url_id, ce.user_agent, ce.referer, ce.clicked_at
-	FROM click_events ce
-	JOIN short_urls su ON ce.short_url_id = su.id
-	WHERE su.short_code = $1`
+	query := `SELECT ce.id, ce.short_url_id, ce.ip_address, ce.user_agent, ce.referer, ce.clicked_at FROM click_events ce JOIN short_urls su ON ce.short_url_id = su.id WHERE su.short_code = $1`
 
 	rows, err := r.db.Query(ctx, query, shortCode)
 	if err != nil {
@@ -74,7 +71,7 @@ func (r *clickEventsRepository) FindByShortCode(ctx context.Context, shortCode s
 
 	for rows.Next() {
 		var clickEvent domain.ClickEvent
-		err := rows.Scan(&clickEvent.Id, &clickEvent.IpAddress, &clickEvent.ShortUrlId, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
+		err := rows.Scan(&clickEvent.Id, &clickEvent.ShortUrlId, &clickEvent.IpAddress, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
 		if err != nil {
 			return nil, fmt.Errorf("something wrong when scan click event data : %w", err)
 		}
@@ -119,7 +116,7 @@ func (r *clickEventsRepository) FilterByDate(ctx context.Context, date time.Time
 }
 
 func (r *clickEventsRepository) FindAll(ctx context.Context) ([]domain.ClickEvent, error) {
-	query := `SELECT id, ip_address, short_url_id, user_agent, referer, clicked_at FROM click_events`
+	query := `SELECT id, short_url_id, ip_address, user_agent, referer, clicked_at FROM click_events`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -132,7 +129,7 @@ func (r *clickEventsRepository) FindAll(ctx context.Context) ([]domain.ClickEven
 
 	for rows.Next() {
 		var clickEvent domain.ClickEvent
-		err := rows.Scan(&clickEvent.Id, &clickEvent.IpAddress, &clickEvent.ShortUrlId, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
+		err := rows.Scan(&clickEvent.Id, &clickEvent.ShortUrlId, &clickEvent.IpAddress, &clickEvent.UserAgent, &clickEvent.Referer, &clickEvent.ClickedAt)
 		if err != nil {
 			return nil, fmt.Errorf("something error when scan click event data : %w", err)
 		}

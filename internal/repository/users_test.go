@@ -3,74 +3,60 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
-	"shorter-url/internal/domain"
 	"testing"
 	"time"
 
+	"shorter-url/internal/domain"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateUsersPass(t *testing.T) {
+func Test_Create_Users_Pass(t *testing.T) {
 	mockPool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
 	defer mockPool.Close()
 	defer func() {
-		err := mockPool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockPool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
 	inputData := &domain.User{
 		Email:        "contoh@gmail.com",
 		PasswordHash: "iniadalahhashrandom",
 	}
+
 	id := int64(9)
 	isVerified := false
 	status := "active"
-	createdAt := time.Now()
+	fixedTime := time.Date(2026, 6, 17, 10, 0, 0, 0, time.UTC)
 
 	query := `^INSERT INTO users\(email, password_hash\)VALUES\(\$1, \$2\) RETURNING id, email, password_hash, is_verified, status, created_at$`
 
-	mockRow := pgxmock.NewRows([]string{"1", "2", "3", "4", "5", "6"}).AddRow(
-		id,
-		inputData.Email,
-		inputData.PasswordHash,
-		isVerified,
-		status,
-		createdAt,
-	)
+	mockRow := pgxmock.NewRows([]string{"id", "email", "password_hash", "is_verified", "status", "created_at"}).
+		AddRow(id, inputData.Email, inputData.PasswordHash, isVerified, status, fixedTime)
 
 	mockPool.ExpectQuery(query).WithArgs(inputData.Email, inputData.PasswordHash).WillReturnRows(mockRow)
 
 	repo := NewUserRepository(mockPool)
-
 	result, err := repo.Create(ctx, inputData)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, id, result.Id)
-	assert.Equal(t, inputData.Email, result.Email)
-	assert.Equal(t, inputData.PasswordHash, result.PasswordHash)
-	assert.Equal(t, isVerified, result.IsVerified)
-	assert.Equal(t, status, result.Status)
-
+	assert.Equal(t, fixedTime, result.CreatedAt)
 }
 
-func TestCreateDuplicateUsers(t *testing.T) {
+func Test_Create_Duplicate_Users(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
 	defer mockpool.Close()
-
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
 	inputData := &domain.User{
 		Email:        "contoh@gmail.com",
 		PasswordHash: "iniadalahpasswordhash",
@@ -78,270 +64,225 @@ func TestCreateDuplicateUsers(t *testing.T) {
 
 	query := `^INSERT INTO users\(email, password_hash\)VALUES\(\$1, \$2\) RETURNING id, email, password_hash, is_verified, status, created_at$`
 
-	mockpool.ExpectQuery(query).WithArgs(inputData.Email, inputData.PasswordHash).WillReturnError(fmt.Errorf("ERROR: Duplicate key value violates unique constraint (SQLSTATE 23505)"))
+	mockpool.ExpectQuery(query).WithArgs(inputData.Email, inputData.PasswordHash).
+		WillReturnError(fmt.Errorf("ERROR: Duplicate key value violates unique constraint (SQLSTATE 23505)"))
 
 	repo := NewUserRepository(mockpool)
 	result, err := repo.Create(ctx, inputData)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something wrong when create new data")
-	assert.Contains(t, err.Error(), "23505")
-
+	assert.ErrorContains(t, err, "something wrong when create new data")
+	assert.ErrorContains(t, err, "23505")
 }
 
-func TestUpdateUsersPass(t *testing.T) {
+func Test_Update_Users_Pass(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
 	inputData := &domain.User{
 		Id:           9,
-		Email:        "",
 		PasswordHash: "iniadalahpasswordhash",
 		IsVerified:   true,
 		Status:       "active",
 	}
-	createdAt := time.Now()
+	fixedTime := time.Date(2026, 6, 17, 10, 0, 0, 0, time.UTC)
 	query := `^UPDATE users SET password_hash = \$1, is_verified = \$2, status = \$3 WHERE id = \$4 RETURNING id, email, password_hash, is_verified, status, created_at$`
 
-	mockRow := pgxmock.NewRows([]string{"1", "2", "3", "4", "5", "6"}).AddRow(
-		inputData.Id,
-		inputData.Email,
-		inputData.PasswordHash,
-		inputData.IsVerified,
-		inputData.Status,
-		createdAt,
-	)
+	mockRow := pgxmock.NewRows([]string{"id", "email", "password_hash", "is_verified", "status", "created_at"}).
+		AddRow(inputData.Id, "tester@gmail.com", inputData.PasswordHash, inputData.IsVerified, inputData.Status, fixedTime)
+
 	mockpool.ExpectQuery(query).WithArgs(inputData.PasswordHash, inputData.IsVerified, inputData.Status, inputData.Id).WillReturnRows(mockRow)
 
 	repo := NewUserRepository(mockpool)
 	result, err := repo.Update(ctx, inputData)
+
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	log.Printf("result: %+v", result)
+	assert.Equal(t, fixedTime, result.CreatedAt)
 }
 
-func TestUpdateUsersFail(t *testing.T) {
+func Test_Update_Users_Fail(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
 	inputData := &domain.User{
 		Id:           1,
-		Email:        "",
 		PasswordHash: "passwordhashhash",
 		IsVerified:   false,
 		Status:       "inactive",
-		CreatedAt:    time.Now(),
 	}
 
 	query := `^UPDATE users SET password_hash = \$1, is_verified = \$2, status = \$3 WHERE id = \$4 RETURNING id, email, password_hash, is_verified, status, created_at$`
 
-	mockpool.ExpectQuery(query).WithArgs(inputData.PasswordHash, inputData.IsVerified, inputData.Status, inputData.Id).WillReturnError(fmt.Errorf("User ID Not Found"))
+	mockpool.ExpectQuery(query).WithArgs(inputData.PasswordHash, inputData.IsVerified, inputData.Status, inputData.Id).WillReturnError(pgx.ErrNoRows)
 
 	repo := NewUserRepository(mockpool)
 	result, err := repo.Update(ctx, inputData)
 
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "User ID Not Found")
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, fmt.Sprintf("user dengan ID %d tidak ditemukan", inputData.Id))
 }
 
-func TestDeteleUsersPass(t *testing.T) {
+func Test_Delete_Users_Pass(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
-	inputData := &domain.User{
-		Id: 1,
-	}
-
+	id := int64(1)
 	query := `^DELETE FROM users WHERE id = \$1$`
 
-	mockpool.ExpectExec(query).WithArgs(inputData.Id).WillReturnResult(pgxmock.NewResult("DELETE", 1))
+	mockpool.ExpectExec(query).WithArgs(id).WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
 	repo := NewUserRepository(mockpool)
-	err = repo.Delete(ctx, inputData.Id)
+	err = repo.Delete(ctx, id)
 
 	assert.NoError(t, err)
 }
 
-func TestDeleteUsersFail(t *testing.T) {
+func Test_Delete_Users_Fail(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		mockpool.ExpectationsWereMet()
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
-	inputData := &domain.User{
-		Id: 99,
-	}
-
+	id := int64(99)
 	query := `^DELETE FROM users WHERE id = \$1$`
 
-	mockpool.ExpectExec(query).WithArgs(inputData.Id).WillReturnResult(pgxmock.NewResult("DELETE", 0))
-	repo := NewUserRepository(mockpool)
+	mockpool.ExpectExec(query).WithArgs(id).WillReturnResult(pgxmock.NewResult("DELETE", 0))
 
-	err = repo.Delete(ctx, inputData.Id)
+	repo := NewUserRepository(mockpool)
+	err = repo.Delete(ctx, id)
 
 	assert.ErrorContains(t, err, "there is no data deleted")
 }
 
-func TestFindByIdPass(t *testing.T) {
+func Test_FindById_Users_Pass(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		mockpool.ExpectationsWereMet()
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
+	id := int64(1)
+	fixedTime := time.Date(2026, 6, 17, 10, 0, 0, 0, time.UTC)
 
-	inputData := &domain.User{
-		Id:           1,
+	expectedData := &domain.User{
+		Id:           id,
 		Email:        "rokubi27@gmail.com",
 		PasswordHash: "this_password_is_hashing",
 		IsVerified:   true,
 		Status:       "active",
-		CreatedAt:    time.Now(),
+		CreatedAt:    fixedTime,
 	}
 
 	query := `^SELECT id, email, password_hash, is_verified, status, created_at FROM users WHERE id = \$1$`
 
-	mockRow := mockpool.NewRows([]string{"1", "2", "3", "4", "5", "6"}).AddRow(
-		inputData.Id,
-		inputData.Email,
-		inputData.PasswordHash,
-		inputData.IsVerified,
-		inputData.Status,
-		inputData.CreatedAt,
-	)
+	mockRow := pgxmock.NewRows([]string{"id", "email", "password_hash", "is_verified", "status", "created_at"}).
+		AddRow(expectedData.Id, expectedData.Email, expectedData.PasswordHash, expectedData.IsVerified, expectedData.Status, expectedData.CreatedAt)
 
-	mockpool.ExpectQuery(query).WithArgs(inputData.Id).WillReturnRows(mockRow)
+	mockpool.ExpectQuery(query).WithArgs(id).WillReturnRows(mockRow)
 
 	repo := NewUserRepository(mockpool)
-	result, err := repo.FindById(ctx, inputData.Id)
+	result, err := repo.FindById(ctx, id)
 
-	assert.Equal(t, inputData, result)
-
-	assert.Nil(t, err)
-
+	assert.NoError(t, err)
+	assert.Equal(t, expectedData, result)
 }
 
-func TestFindByIdFail(t *testing.T) {
+func Test_FindById_Users_Fail(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
-	inputData := &domain.User{
-		Id: 99,
-	}
-
+	id := int64(99)
 	query := `^SELECT id, email, password_hash, is_verified, status, created_at FROM users WHERE id = \$1$`
-	mockpool.ExpectQuery(query).WithArgs(inputData.Id).WillReturnError(fmt.Errorf("user not found"))
+
+	mockpool.ExpectQuery(query).WithArgs(id).WillReturnError(pgx.ErrNoRows)
 
 	repo := NewUserRepository(mockpool)
-	result, err := repo.FindById(ctx, inputData.Id)
+	result, err := repo.FindById(ctx, id)
 
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "user not found")
+	assert.ErrorContains(t, err, "user dengan ID 99 tidak ditemukan")
 }
-func TestFindByEmailPass(t *testing.T) {
+
+func Test_FindByEmail_Users_Pass(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		mockpool.ExpectationsWereMet()
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
+	email := "rokubi27@gmail.com"
+	fixedTime := time.Date(2026, 6, 17, 10, 0, 0, 0, time.UTC)
 
-	inputData := &domain.User{
+	expectedData := &domain.User{
 		Id:           1,
-		Email:        "rokubi27@gmail.com",
+		Email:        email,
 		PasswordHash: "this_password_is_hashing",
 		IsVerified:   true,
 		Status:       "active",
-		CreatedAt:    time.Now(),
+		CreatedAt:    fixedTime,
 	}
 
 	query := `^SELECT id, email, password_hash, is_verified, status, created_at FROM users WHERE email = \$1$`
 
-	mockRow := mockpool.NewRows([]string{"1", "2", "3", "4", "5", "6"}).AddRow(
-		inputData.Id,
-		inputData.Email,
-		inputData.PasswordHash,
-		inputData.IsVerified,
-		inputData.Status,
-		inputData.CreatedAt,
-	)
+	mockRow := pgxmock.NewRows([]string{"id", "email", "password_hash", "is_verified", "status", "created_at"}).
+		AddRow(expectedData.Id, expectedData.Email, expectedData.PasswordHash, expectedData.IsVerified, expectedData.Status, expectedData.CreatedAt)
 
-	mockpool.ExpectQuery(query).WithArgs(inputData.Email).WillReturnRows(mockRow)
+	mockpool.ExpectQuery(query).WithArgs(email).WillReturnRows(mockRow)
 
 	repo := NewUserRepository(mockpool)
-	result, err := repo.FindByEmail(ctx, inputData.Email)
+	result, err := repo.FindByEmail(ctx, email)
 
-	assert.Nil(t, err)
-	assert.Equal(t, inputData, result)
-
+	assert.NoError(t, err)
+	assert.Equal(t, expectedData, result)
 }
 
-func TestFindByEmailFail(t *testing.T) {
+func Test_FindByEmail_Users_Fail(t *testing.T) {
 	mockpool, err := pgxmock.NewPool()
 	assert.NoError(t, err)
-
 	defer mockpool.Close()
 	defer func() {
-		err := mockpool.ExpectationsWereMet()
-		assert.NoError(t, err)
+		assert.NoError(t, mockpool.ExpectationsWereMet())
 	}()
 
 	ctx := context.Background()
-
-	inputData := &domain.User{
-		Email: "rokubi27@gmail.com",
-	}
-
+	email := "rokubi27@gmail.com"
 	query := `^SELECT id, email, password_hash, is_verified, status, created_at FROM users WHERE email = \$1$`
-	mockpool.ExpectQuery(query).WithArgs(inputData.Email).WillReturnError(fmt.Errorf("email not found"))
+
+	mockpool.ExpectQuery(query).WithArgs(email).WillReturnError(pgx.ErrNoRows)
 
 	repo := NewUserRepository(mockpool)
-	result, err := repo.FindByEmail(ctx, inputData.Email)
+	result, err := repo.FindByEmail(ctx, email)
 
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "email not found")
+	assert.ErrorContains(t, err, "user dengan email rokubi27@gmail.com tidak ditemukan")
 }

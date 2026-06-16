@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"shorter-url/internal/domain"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pashagolub/pgxmock/v5"
 )
 
@@ -36,6 +38,9 @@ func (u *userRepository) Update(ctx context.Context, user *domain.User) (*domain
 		Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("user dengan ID %d tidak ditemukan", user.Id)
+		}
 		return nil, fmt.Errorf("something wrong when update data: %w", err)
 	}
 
@@ -62,6 +67,9 @@ func (u *userRepository) FindById(ctx context.Context, id int64) (*domain.User, 
 
 	err := u.db.QueryRow(ctx, query, id).Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("user dengan ID %d tidak ditemukan", id)
+		}
 		return nil, fmt.Errorf("something error when find user by id : %w", err)
 	}
 	return user, nil
@@ -73,6 +81,9 @@ func (u *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 
 	err := u.db.QueryRow(ctx, query, email).Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("user dengan email %s tidak ditemukan", email)
+		}
 		return nil, fmt.Errorf("something error when find user by email : %w", err)
 	}
 	return user, nil
