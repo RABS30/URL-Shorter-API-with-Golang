@@ -30,13 +30,9 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) (*domain
 }
 
 func (u *userRepository) Update(ctx context.Context, user *domain.User) (*domain.User, error) {
-	query := `
-		UPDATE users 
-		SET email = $1, password_hash = $2, is_verified = $3, status = $4
-		WHERE id = $5
-		RETURNING id, email, password_hash, is_verified, status, created_at`
+	query := `UPDATE users SET password_hash = $1, is_verified = $2, status = $3 WHERE id = $4 RETURNING id, email, password_hash, is_verified, status, created_at`
 
-	err := u.db.QueryRow(ctx, query, user.Email, user.PasswordHash, user.IsVerified, user.Status, user.Id).
+	err := u.db.QueryRow(ctx, query, user.PasswordHash, user.IsVerified, user.Status, user.Id).
 		Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 
 	if err != nil {
