@@ -165,7 +165,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Get all shortened urls",
             "content": {
               "application/json": {
