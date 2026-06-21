@@ -3,17 +3,16 @@ package repository
 import (
 	"context"
 	"fmt"
+	"shorter-url/internal/database"
 	"shorter-url/internal/domain"
 	"time"
-
-	"github.com/pashagolub/pgxmock/v5"
 )
 
 type clickEventsRepository struct {
-	db pgxmock.PgxPoolIface
+	db database.PgxDatabase
 }
 
-func NewClickEventsRepository(db pgxmock.PgxPoolIface) domain.ClickEventRepository {
+func NewClickEventsRepository(db database.PgxDatabase) domain.ClickEventRepository {
 	return &clickEventsRepository{
 		db: db,
 	}

@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shorter-url/internal/database"
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v5"
 )
 
 type userRepository struct {
-	db pgxmock.PgxPoolIface
+	db database.PgxDatabase
 }
 
-func NewUserRepository(db pgxmock.PgxPoolIface) domain.UserRepository {
+func NewUserRepository(db database.PgxDatabase) domain.UserRepository {
 	return &userRepository{
 		db: db,
 	}
@@ -82,7 +82,7 @@ func (u *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 	err := u.db.QueryRow(ctx, query, email).Scan(&user.Id, &user.Email, &user.PasswordHash, &user.IsVerified, &user.Status, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("user dengan email %s tidak ditemukan", email)
+			return nil, nil
 		}
 		return nil, fmt.Errorf("something error when find user by email : %w", err)
 	}

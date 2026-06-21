@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shorter-url/internal/database"
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v5"
 )
 
 type verificationTokenRepository struct {
-	db pgxmock.PgxPoolIface
+	db database.PgxDatabase
 }
 
-func NewVerificationTokenRepository(db pgxmock.PgxPoolIface) domain.VerificationTokenRepository {
+func NewVerificationTokenRepository(db database.PgxDatabase) domain.VerificationTokenRepository {
 	return &verificationTokenRepository{
 		db: db,
 	}

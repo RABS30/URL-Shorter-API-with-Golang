@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"shorter-url/internal/domain"
+	"shorter-url/internal/helper"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -17,17 +18,17 @@ type ShortUrlResponse struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type ShortUrlHandler struct {
+type shortUrlHandler struct {
 	Service domain.ShortUrlsService
 }
 
-func NewShortUrlHandler(service domain.ShortUrlsService) *ShortUrlHandler {
-	return &ShortUrlHandler{
+func NewShortUrlHandler(service domain.ShortUrlsService) *shortUrlHandler {
+	return &shortUrlHandler{
 		Service: service,
 	}
 }
 
-func (s *ShortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (s *shortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var inputData struct {
 		OriginalUrl string `json:"original_url"`
 	}
@@ -35,15 +36,7 @@ func (s *ShortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httpr
 	inputRequest := json.NewDecoder(r.Body)
 	inputRequest.DisallowUnknownFields()
 	if inputRequest.Decode(&inputData) != nil {
-		w.Header().Set("Content-Type", "application/json")
-
-		w.WriteHeader(http.StatusBadRequest)
-
-		errorResponse := map[string]any{
-			"message": "JSON format wrong!",
-		}
-
-		json.NewEncoder(w).Encode(errorResponse)
+		helper.BadResponse(w, http.StatusBadRequest, "invalid json format")
 
 		return
 	}
@@ -55,21 +48,12 @@ func (s *ShortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httpr
 
 	result, err := s.Service.CreateShortUrl(ctx, userId, inputData.OriginalUrl, expiredAt)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-
-		w.WriteHeader(http.StatusBadRequest)
-
-		errorResponse := map[string]any{
-			"message": "something wrong when create short code!",
-		}
-
-		json.NewEncoder(w).Encode(errorResponse)
+		helper.BadResponse(w, http.StatusBadRequest, "failed to create short code")
 
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
 	w.WriteHeader(http.StatusCreated)
 
 	data := &ShortUrlResponse{
@@ -86,21 +70,11 @@ func (s *ShortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httpr
 	})
 }
 
-func (s *ShortUrlHandler) GetCode(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (s *shortUrlHandler) GetShortCode(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	ctx := r.Context()
-
 	shortCode := p.ByName("shortCode")
-	if shortCode == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{
-			"message": "Short code cannot be empty",
-		})
 
-		return
-	}
-
-	_, err := s.Service.GetShortUrlByShortCode(ctx, shortCode)
+	result, err := s.Service.GetShortUrlByShortCode(ctx, shortCode)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -111,8 +85,5 @@ func (s *ShortUrlHandler) GetCode(w http.ResponseWriter, r *http.Request, p http
 		return
 	}
 
-	// originalUrl := result.OriginalUrl
-	originalUrl := "https://app.notion.com/p/rabs30/Golang-Web-367bc69b480380cb9f37cc1696814776#36bbc69b480380f88aacddc5db48f472"
-
-	http.Redirect(w, r, originalUrl, http.StatusFound)
+	http.Redirect(w, r, result.OriginalUrl, http.StatusFound)
 }

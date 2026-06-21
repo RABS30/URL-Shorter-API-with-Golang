@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shorter-url/internal/database"
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v5"
 )
 
 type passwordResetTokensRepository struct {
-	db pgxmock.PgxPoolIface
+	db database.PgxDatabase
 }
 
-func NewPasswordResetTokensRepository(db pgxmock.PgxPoolIface) domain.PasswordResetTokensRepository {
+func NewPasswordResetTokensRepository(db database.PgxDatabase) domain.PasswordResetTokensRepository {
 	return &passwordResetTokensRepository{
 		db: db,
 	}

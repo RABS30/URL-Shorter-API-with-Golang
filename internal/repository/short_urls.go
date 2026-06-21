@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shorter-url/internal/database"
 	"shorter-url/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v5"
 )
 
 type shortUrlRepository struct {
-	db pgxmock.PgxPoolIface
+	db database.PgxDatabase
 }
 
-func NewShortUrlRepository(db pgxmock.PgxPoolIface) domain.ShortUrlsRepository {
+func NewShortUrlRepository(db database.PgxDatabase) domain.ShortUrlsRepository {
 	return &shortUrlRepository{
 		db: db,
 	}

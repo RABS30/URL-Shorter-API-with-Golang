@@ -21,3 +21,8 @@ type UserRepository interface {
 	FindById(ctx context.Context, id int64) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 }
+
+type AuthService interface {
+	Register(ctx context.Context, email string, password string) (*User, error)
+	Login(ctx context.Context, email string, password string) (string, error)
+}
