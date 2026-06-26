@@ -20,15 +20,6 @@ func NewVerificationTokenRepository(db database.PgxDatabase) domain.Verification
 	}
 }
 
-func (v *verificationTokenRepository) Create(ctx context.Context, verificationToken *domain.VerificationToken) (*domain.VerificationToken, error) {
-	err := v.db.QueryRow(ctx, "INSERT INTO verification_tokens (user_id, token, expired_at) VALUES ($1, $2, $3) RETURNING id, user_id, token, expired_at", verificationToken.UserId, verificationToken.Token, verificationToken.ExpiredAt).Scan(&verificationToken.Id, &verificationToken.UserId, &verificationToken.Token, &verificationToken.ExpiredAt)
-	if err != nil {
-		return nil, fmt.Errorf("something wrong when create verification token: %w", err)
-	}
-
-	return verificationToken, nil
-}
-
 func (v *verificationTokenRepository) Delete(ctx context.Context, id int64) error {
 	commandTag, err := v.db.Exec(ctx, "DELETE FROM verification_tokens WHERE id = $1", id)
 	if err != nil {
@@ -42,11 +33,31 @@ func (v *verificationTokenRepository) Delete(ctx context.Context, id int64) erro
 	return nil
 }
 
+func (v *verificationTokenRepository) Create(ctx context.Context, verificationToken *domain.VerificationToken) (*domain.VerificationToken, error) {
+	// Tambahkan created_at ke dalam RETURNING dan Scan
+	query := `INSERT INTO verification_tokens (user_id, token, expired_at) 
+	          VALUES ($1, $2, $3) 
+	          RETURNING id, user_id, token, expired_at, created_at`
+
+	err := v.db.QueryRow(ctx, query, verificationToken.UserId, verificationToken.Token, verificationToken.ExpiredAt).
+		Scan(&verificationToken.Id, &verificationToken.UserId, &verificationToken.Token, &verificationToken.ExpiredAt, &verificationToken.CreatedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("something wrong when create verification token: %w", err)
+	}
+
+	return verificationToken, nil
+}
+
 func (v *verificationTokenRepository) FindByToken(ctx context.Context, token string) (*domain.VerificationToken, error) {
 	var verificationToken domain.VerificationToken
-	err := v.db.QueryRow(ctx, "SELECT id, user_id, token, expired_at FROM verification_tokens WHERE token = $1", token).Scan(&verificationToken.Id, &verificationToken.UserId, &verificationToken.Token, &verificationToken.ExpiredAt)
+	// Ambil juga kolom created_at
+	query := "SELECT id, user_id, token, expired_at, created_at FROM verification_tokens WHERE token = $1"
+
+	err := v.db.QueryRow(ctx, query, token).
+		Scan(&verificationToken.Id, &verificationToken.UserId, &verificationToken.Token, &verificationToken.ExpiredAt, &verificationToken.CreatedAt)
+
 	if err != nil {
-		// Mengisolasi logika bisnis jika token fiktif/tidak terdaftar
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("verification token not found")
 		}
@@ -54,4 +65,12 @@ func (v *verificationTokenRepository) FindByToken(ctx context.Context, token str
 	}
 
 	return &verificationToken, nil
+}
+
+func (v *verificationTokenRepository) DeleteByUserId(ctx context.Context, userId int64) error {
+	_, err := v.db.Exec(ctx, "DELETE FROM verification_tokens WHERE user_id = $1", userId)
+	if err != nil {
+		return fmt.Errorf("something wrong when delete verification token by user id: %w", err)
+	}
+	return nil
 }

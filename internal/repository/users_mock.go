@@ -41,6 +41,11 @@ func (m *MockUserRepository) Update(ctx context.Context, user *domain.User) (*do
 	return res, args.Error(1)
 }
 
+func (m *MockUserRepository) UpdatePassword(ctx context.Context, userId int64, hashedPassword string) error {
+	args := m.Called(ctx, userId, hashedPassword)
+	return args.Error(0)
+}
+
 // 4. TAMBAHAN: Delete
 func (m *MockUserRepository) Delete(ctx context.Context, id int64) error {
 	args := m.Called(ctx, id)

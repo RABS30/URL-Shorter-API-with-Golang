@@ -47,6 +47,21 @@ func (u *userRepository) Update(ctx context.Context, user *domain.User) (*domain
 	return user, nil
 }
 
+func (r *userRepository) UpdatePassword(ctx context.Context, userId int64, hashedPassword string) error {
+	query := "UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2"
+
+	result, err := r.db.Exec(ctx, query, hashedPassword, userId)
+	if err != nil {
+		return fmt.Errorf("something wrong when update user password: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found, no rows updated")
+	}
+
+	return nil
+}
+
 func (u *userRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM users WHERE id = $1`
 

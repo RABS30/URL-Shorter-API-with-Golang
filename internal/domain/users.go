@@ -18,6 +18,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) (*User, error)
 	Delete(ctx context.Context, id int64) error
+	UpdatePassword(ctx context.Context, id int64, hashedPassword string) error
 	FindById(ctx context.Context, id int64) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 }
@@ -25,4 +26,13 @@ type UserRepository interface {
 type AuthService interface {
 	Register(ctx context.Context, email string, password string) (*User, error)
 	Login(ctx context.Context, email string, password string) (string, error)
+}
+
+type EmailSender interface {
+	SendEmail(ctx context.Context, to string, subject string, body string) error
+}
+
+type PasswordHasher interface {
+	Hash(ctx context.Context, password string) (string, error)
+	Compare(ctx context.Context, password string, hashedPassword string) error
 }

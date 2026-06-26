@@ -21,9 +21,11 @@ func NewPasswordResetTokensRepository(db database.PgxDatabase) domain.PasswordRe
 }
 
 func (r *passwordResetTokensRepository) Create(ctx context.Context, passwordResetToken *domain.PasswordResetTokens) (*domain.PasswordResetTokens, error) {
-	query := `INSERT INTO password_reset_tokens (user_id, token, expired_at) VALUES ($1, $2, $3) RETURNING id`
+	query := `INSERT INTO password_reset_tokens (user_id, token, expired_at) VALUES ($1, $2, $3) RETURNING id, user_id, token, expired_at, created_at`
 
-	err := r.db.QueryRow(ctx, query, passwordResetToken.UserId, passwordResetToken.Token, passwordResetToken.ExpiredAt).Scan(&passwordResetToken.Id)
+	err := r.db.QueryRow(ctx, query, passwordResetToken.UserId, passwordResetToken.Token, passwordResetToken.ExpiredAt).
+		Scan(&passwordResetToken.Id, &passwordResetToken.UserId, &passwordResetToken.Token, &passwordResetToken.ExpiredAt, &passwordResetToken.CreatedAt)
+
 	if err != nil {
 		return nil, fmt.Errorf("something wrong when create password reset token : %w", err)
 	}
@@ -46,17 +48,27 @@ func (r *passwordResetTokensRepository) Delete(ctx context.Context, id int64) er
 	return nil
 }
 
+func (r *passwordResetTokensRepository) DeleteByUserId(ctx context.Context, userId int64) error {
+	query := "DELETE FROM password_reset_tokens WHERE user_id = $1"
+
+	_, err := r.db.Exec(ctx, query, userId)
+	if err != nil {
+		return fmt.Errorf("something wrong when delete password reset token by user id: %w", err)
+	}
+	return nil
+}
+
 func (r *passwordResetTokensRepository) FindByToken(ctx context.Context, token string) (*domain.PasswordResetTokens, error) {
-	query := "SELECT id, user_id, token, expired_at FROM password_reset_tokens WHERE token = $1"
+	query := "SELECT id, user_id, token, expired_at, created_at FROM password_reset_tokens WHERE token = $1"
 	var passwordResetToken domain.PasswordResetTokens
 
-	err := r.db.QueryRow(ctx, query, token).Scan(&passwordResetToken.Id, &passwordResetToken.UserId, &passwordResetToken.Token, &passwordResetToken.ExpiredAt)
+	err := r.db.QueryRow(ctx, query, token).
+		Scan(&passwordResetToken.Id, &passwordResetToken.UserId, &passwordResetToken.Token, &passwordResetToken.ExpiredAt, &passwordResetToken.CreatedAt)
+
 	if err != nil {
-		// Jika errornya adalah karena datanya memang tidak ada
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("token not found")
 		}
-		// Jika error karena masalah teknis database (koneksi terputus, dll)
 		return nil, fmt.Errorf("something wrong when find password reset token by token : %w", err)
 	}
 	return &passwordResetToken, nil

@@ -3,6 +3,7 @@ CREATE TABLE password_reset_tokens (
     user_id BIGINT NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     expired_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_password_reset_tokens_user
         FOREIGN KEY (user_id)
