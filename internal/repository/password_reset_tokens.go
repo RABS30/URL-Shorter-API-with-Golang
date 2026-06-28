@@ -27,7 +27,7 @@ func (r *passwordResetTokensRepository) Create(ctx context.Context, passwordRese
 		Scan(&passwordResetToken.Id, &passwordResetToken.UserId, &passwordResetToken.Token, &passwordResetToken.ExpiredAt, &passwordResetToken.CreatedAt)
 
 	if err != nil {
-		return nil, fmt.Errorf("something wrong when create password reset token : %w", err)
+		return nil, fmt.Errorf("insert password reset token: %w", err)
 	}
 
 	return passwordResetToken, nil
@@ -38,11 +38,11 @@ func (r *passwordResetTokensRepository) Delete(ctx context.Context, id int64) er
 
 	commandTag, err := r.db.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("something wrong when delete password reset token : %w", err)
+		return fmt.Errorf("delete password reset token by id: %w", err)
 	}
 
 	if commandTag.RowsAffected() == 0 {
-		return fmt.Errorf("there is no data deleted, password reset token with ID %d not found", id)
+		return fmt.Errorf("delete password reset token by id: %w", domain.ErrNotFound)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (r *passwordResetTokensRepository) DeleteByUserId(ctx context.Context, user
 
 	_, err := r.db.Exec(ctx, query, userId)
 	if err != nil {
-		return fmt.Errorf("something wrong when delete password reset token by user id: %w", err)
+		return fmt.Errorf("delete password reset token by user id: %w", err)
 	}
 	return nil
 }
@@ -67,9 +67,10 @@ func (r *passwordResetTokensRepository) FindByToken(ctx context.Context, token s
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("token not found")
+			err = domain.ErrNotFound
 		}
-		return nil, fmt.Errorf("something wrong when find password reset token by token : %w", err)
+		return nil, fmt.Errorf("query password reset tokens by token: %w", err)
 	}
+
 	return &passwordResetToken, nil
 }

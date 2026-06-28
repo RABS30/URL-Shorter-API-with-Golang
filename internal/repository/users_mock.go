@@ -11,7 +11,6 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-// 1. Create (Sudah ada)
 func (m *MockUserRepository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	args := m.Called(ctx, user)
 	var res *domain.User
@@ -21,7 +20,6 @@ func (m *MockUserRepository) Create(ctx context.Context, user *domain.User) (*do
 	return res, args.Error(1)
 }
 
-// 2. FindByEmail (Sudah ada)
 func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	args := m.Called(ctx, email)
 	var user *domain.User
@@ -31,7 +29,6 @@ func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*do
 	return user, args.Error(1)
 }
 
-// 3. TAMBAHAN: Update
 func (m *MockUserRepository) Update(ctx context.Context, user *domain.User) (*domain.User, error) {
 	args := m.Called(ctx, user)
 	var res *domain.User
@@ -41,18 +38,21 @@ func (m *MockUserRepository) Update(ctx context.Context, user *domain.User) (*do
 	return res, args.Error(1)
 }
 
-func (m *MockUserRepository) UpdatePassword(ctx context.Context, userId int64, hashedPassword string) error {
-	args := m.Called(ctx, userId, hashedPassword)
+func (m *MockUserRepository) UpdatePassword(ctx context.Context, id int64, hashedPassword string) error {
+	args := m.Called(ctx, id, hashedPassword)
 	return args.Error(0)
 }
 
-// 4. TAMBAHAN: Delete
+func (m *MockUserRepository) UpdateVerified(ctx context.Context, id int64, verify bool) error {
+	args := m.Called(ctx, id, verify)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) Delete(ctx context.Context, id int64) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 
-// 5. TAMBAHAN: FindById
 func (m *MockUserRepository) FindById(ctx context.Context, id int64) (*domain.User, error) {
 	args := m.Called(ctx, id)
 	var user *domain.User

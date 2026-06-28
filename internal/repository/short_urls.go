@@ -25,7 +25,7 @@ func (r *shortUrlRepository) Create(ctx context.Context, shortUrl *domain.ShortU
 
 	err := r.db.QueryRow(ctx, query, shortUrl.UserId, shortUrl.OriginalUrl, shortUrl.ShortCode, shortUrl.ExpiredAt).Scan(&shortUrl.Id)
 	if err != nil {
-		return nil, fmt.Errorf("something wrong when create short url : %w", err)
+		return nil, fmt.Errorf("insert short url: %w", err)
 	}
 
 	return shortUrl, nil
@@ -36,11 +36,11 @@ func (r *shortUrlRepository) Delete(ctx context.Context, id int64) error {
 
 	commandTag, err := r.db.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("something wrong when delete short url : %w", err)
+		return fmt.Errorf("delete short url: %w", err)
 	}
 
 	if commandTag.RowsAffected() == 0 {
-		return fmt.Errorf("id %d not found", id)
+		return fmt.Errorf("delete short url: %w", domain.ErrNotFound)
 	}
 
 	return nil
@@ -54,9 +54,9 @@ func (r *shortUrlRepository) FindById(ctx context.Context, id int64) (*domain.Sh
 	err := r.db.QueryRow(ctx, query, id).Scan(&shortUrl.Id, &shortUrl.UserId, &shortUrl.ShortCode, &shortUrl.OriginalUrl, &shortUrl.ExpiredAt, &shortUrl.CreatedAt, &shortUrl.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			err = domain.ErrNotFound
 		}
-		return nil, fmt.Errorf("something wrong when find short url by id : %w", err)
+		return nil, fmt.Errorf("query short url by id : %w", err)
 	}
 
 	return shortUrl, nil
@@ -67,7 +67,7 @@ func (r *shortUrlRepository) FindByUserId(ctx context.Context, userId int64) ([]
 
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
-		return nil, fmt.Errorf("something wrong when find short url by user id : %w", err)
+		return nil, fmt.Errorf("query short url by user id: %w", err)
 	}
 
 	defer rows.Close()
@@ -79,10 +79,14 @@ func (r *shortUrlRepository) FindByUserId(ctx context.Context, userId int64) ([]
 
 		err := rows.Scan(&shortUrl.Id, &shortUrl.UserId, &shortUrl.ShortCode, &shortUrl.OriginalUrl, &shortUrl.ExpiredAt, &shortUrl.CreatedAt, &shortUrl.UpdatedAt)
 		if err != nil {
-			return nil, fmt.Errorf("something wrong when scan short url : %w", err)
+			return nil, fmt.Errorf("scan short url: %w", err)
 		}
 
 		shortUrls = append(shortUrls, shortUrl)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate short urls rows: %w", err)
 	}
 
 	return shortUrls, nil
@@ -95,7 +99,10 @@ func (r *shortUrlRepository) FindByShortCode(ctx context.Context, shortCode stri
 
 	err := r.db.QueryRow(ctx, query, shortCode).Scan(&shortUrl.Id, &shortUrl.UserId, &shortUrl.ShortCode, &shortUrl.OriginalUrl, &shortUrl.ExpiredAt, &shortUrl.CreatedAt, &shortUrl.UpdatedAt)
 	if err != nil {
-		return nil, fmt.Errorf("something wrong when find short url by short code : %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = domain.ErrNotFound
+		}
+		return nil, fmt.Errorf("query short url by short code: %w", err)
 	}
 
 	return shortUrl, nil
