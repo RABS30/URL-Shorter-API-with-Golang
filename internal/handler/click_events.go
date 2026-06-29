@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"shorter-url/internal/domain"
 	"shorter-url/internal/helper"
@@ -25,10 +23,11 @@ func NewClickEventHandler(service domain.ClickEventService) *clickEventHandler {
 func (h *clickEventHandler) FindByShortUrlId(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	userId, err := middleware.GetUserIDFromContext(r, middleware.UserClaims)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusUnauthorized, "unauthorized")
 
-		helper.BadResponse(w, http.StatusUnauthorized, "Unauthorized")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
@@ -37,19 +36,22 @@ func (h *clickEventHandler) FindByShortUrlId(w http.ResponseWriter, r *http.Requ
 	idString := p.ByName("shortUrlId")
 	shortUrlId, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid short url id")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
 	listEvent, err := h.Service.FindByShortUrlId(ctx, shortUrlId, userId)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusNotFound, "short url data not found")
 
-		helper.BadResponse(w, http.StatusNotFound, fmt.Sprintf("click event not found with Short ID: %d and User ID:%d", shortUrlId, userId))
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
+
 		return
 	}
 

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"shorter-url/internal/domain"
@@ -38,19 +37,21 @@ func (h *passwordResetTokensHandler) ForgotPasswordHandler(w http.ResponseWriter
 	request.DisallowUnknownFields()
 	err := request.Decode(&req)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid request payload")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
 	err = h.service.RequestResetPassword(ctx, req.Email)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusInternalServerError, "unable to process request")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
@@ -64,6 +65,10 @@ func (h *passwordResetTokensHandler) ResetPasswordHandler(w http.ResponseWriter,
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		helper.BadResponse(w, http.StatusBadRequest, "token is required")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("token not found")
+		}
 		return
 	}
 
@@ -71,19 +76,30 @@ func (h *passwordResetTokensHandler) ResetPasswordHandler(w http.ResponseWriter,
 	request.DisallowUnknownFields()
 	err := request.Decode(&req)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid request payload")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
+		return
+	}
+	if req.Password1 != req.Password2 {
+		helper.BadResponse(w, http.StatusBadRequest, "password1 and password2 do not match")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("password1 and password2 do not match")
+		}
+
 		return
 	}
 
 	err = h.service.ExecuteResetPassword(ctx, token, req.Password1, req.Password2)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusInternalServerError, "unable to process request")
 
-		helper.BadResponse(w, http.StatusBadRequest, "unable to process request")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 

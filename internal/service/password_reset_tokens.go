@@ -97,7 +97,7 @@ func (s *passwordResetTokensService) ExecuteResetPassword(ctx context.Context, t
 
 	err = s.repo.DeleteByUserId(ctx, userToken.UserId)
 	if err != nil {
-		log.Printf("[WARNING] failed to delete password reset token for userId %d: %v", userToken.UserId, err)
+		log.Print(err.Error())
 	}
 
 	return nil

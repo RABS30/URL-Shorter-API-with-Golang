@@ -8,44 +8,41 @@ import (
 
 const ErrorLogKey contextKey = "errorDetails"
 
-type responseWriterWrapper struct {
+type ResponseWriterWrapper struct {
 	http.ResponseWriter
 	StatusCode int
+	ErrorLog   string
 }
 
-func (r *responseWriterWrapper) WriteHeader(statusCode int) {
+func (r *ResponseWriterWrapper) WriteHeader(statusCode int) {
 	r.StatusCode = statusCode
 	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *ResponseWriterWrapper) WriteError(err string) {
+	r.ErrorLog = err
 }
 
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 
-		responseWriter := &responseWriterWrapper{
+		wrapper := &ResponseWriterWrapper{
 			ResponseWriter: w,
 			StatusCode:     http.StatusOK,
+			ErrorLog:       "-",
 		}
 
-		next.ServeHTTP(responseWriter, r)
-
-		var errorDetail string = "-"
-		if responseWriter.StatusCode >= 400 {
-			if err, ok := r.Context().Value(ErrorLogKey).(error); ok && err != nil {
-				errorDetail = "error: " + err.Error()
-			} else {
-				errorDetail = "no detailed error"
-			}
-		}
+		next.ServeHTTP(wrapper, r)
 
 		log.Printf(
 			"| %d | %s | %s | %s | %s | %s |",
-			responseWriter.StatusCode,
+			wrapper.StatusCode,
 			r.Method,
 			r.URL.Path,
 			r.RemoteAddr,
 			time.Since(startTime),
-			errorDetail,
+			wrapper.ErrorLog,
 		)
 	})
 }

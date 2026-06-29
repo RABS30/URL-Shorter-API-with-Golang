@@ -17,7 +17,7 @@ func NewBcryptHasher() domain.PasswordHasher {
 func (b *bcryptHasher) Hash(ctx context.Context, password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("something error when Hash password, %w", err)
+		return "", fmt.Errorf("hash password: %w", err)
 	}
 
 	return string(hashedPassword), nil
@@ -26,5 +26,3 @@ func (b *bcryptHasher) Hash(ctx context.Context, password string) (string, error
 func (b *bcryptHasher) Compare(ctx context.Context, password string, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
-
-

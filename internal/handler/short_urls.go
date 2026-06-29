@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"shorter-url/internal/domain"
@@ -35,14 +34,20 @@ func NewShortUrlHandler(service domain.ShortUrlsService, clickEvent domain.Click
 func (s *shortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	userId, err := middleware.GetUserIDFromContext(r, middleware.UserClaims)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusUnauthorized, "unauthorized")
 
-		helper.BadResponse(w, http.StatusInternalServerError, "server broken")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
+
 	if userId == 0 {
 		helper.BadResponse(w, http.StatusUnauthorized, "Unauthorized")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("user id not found")
+		}
 		return
 	}
 
@@ -53,10 +58,11 @@ func (s *shortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httpr
 	inputRequest := json.NewDecoder(r.Body)
 	inputRequest.DisallowUnknownFields()
 	if err := inputRequest.Decode(&inputData); err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid request payload")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
@@ -65,10 +71,11 @@ func (s *shortUrlHandler) Create(w http.ResponseWriter, r *http.Request, p httpr
 
 	result, err := s.Service.CreateShortUrl(ctx, userId, inputData.OriginalUrl, expiredAt)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusInternalServerError, "failed to create short code")
 
-		helper.BadResponse(w, http.StatusBadRequest, "failed to create short code")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
@@ -89,10 +96,12 @@ func (s *shortUrlHandler) AccessShortCode(w http.ResponseWriter, r *http.Request
 
 	result, err := s.Service.GetShortUrlByShortCode(ctx, shortCode)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusNotFound, "short code not found")
 
-		helper.BadResponse(w, http.StatusBadRequest, "short code not found")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
+
 		return
 	}
 
@@ -117,11 +126,9 @@ func (s *shortUrlHandler) AccessShortCode(w http.ResponseWriter, r *http.Request
 
 	_, err = s.ClickEvent.Create(ctx, metadataUser)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
-		helper.BadResponse(w, http.StatusInternalServerError, "failed to record metric data")
-		return
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 	}
 
 	http.Redirect(w, r, result.OriginalUrl, http.StatusFound)

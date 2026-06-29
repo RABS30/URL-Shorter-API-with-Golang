@@ -32,8 +32,11 @@ func AuthMiddleware(secretKey string) func(httprouter.Handle) httprouter.Handle 
 
 			cookie, err := r.Cookie("token")
 			if err != nil {
-				helper.BadResponse(w, http.StatusUnauthorized, "")
+				helper.BadResponse(w, http.StatusUnauthorized, "unauthorized")
 
+				if wrapper, ok := w.(*ResponseWriterWrapper); ok {
+					wrapper.WriteError(err.Error())
+				}
 				return
 			}
 
@@ -46,8 +49,11 @@ func AuthMiddleware(secretKey string) func(httprouter.Handle) httprouter.Handle 
 			}, jwt.WithValidMethods([]string{"HS256"}))
 
 			if err != nil || !token.Valid {
-				http.Error(w, `{"message" : "Unathorized: Token invalid or expired"}`, http.StatusUnauthorized)
+				helper.BadResponse(w, http.StatusUnauthorized, "invalid token or expired")
 
+				if wrapper, ok := w.(*ResponseWriterWrapper); ok {
+					wrapper.WriteError(err.Error())
+				}
 				return
 			}
 
@@ -62,13 +68,13 @@ func AuthMiddleware(secretKey string) func(httprouter.Handle) httprouter.Handle 
 func GetUserIDFromContext(r *http.Request, key any) (int64, error) {
 	userContext, ok := r.Context().Value(key).(*Claims)
 	if !ok || userContext == nil {
-		return 0, fmt.Errorf("claims not found in context")
+		return 0, fmt.Errorf("user data not found")
 	}
 
 	userId := userContext.UserID
 
 	if userId == 0 {
-		return 0, fmt.Errorf("id is zero or empty")
+		return 0, fmt.Errorf("user id not found")
 	}
 
 	return userId, nil

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"shorter-url/internal/domain"
 	"shorter-url/internal/helper"
+	"shorter-url/internal/middleware"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -29,12 +30,19 @@ func (h *verificationTokenHandler) RequestVerification(w http.ResponseWriter, r 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		helper.BadResponse(w, http.StatusBadRequest, "invalid request body")
 
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
+
 		return
 	}
 
 	if req.Email == "" {
 		helper.BadResponse(w, http.StatusBadRequest, "email is required")
 
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("email is required")
+		}
 		return
 	}
 
@@ -42,22 +50,27 @@ func (h *verificationTokenHandler) RequestVerification(w http.ResponseWriter, r 
 	if err != nil {
 		if err.Error() == "user is verified" {
 			helper.BadResponse(w, http.StatusConflict, err.Error())
-
-			return
+		} else {
+			helper.BadResponse(w, http.StatusInternalServerError, "failed to send verification email")
 		}
-		helper.BadResponse(w, http.StatusInternalServerError, "failed to send verification email")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 
 		return
 	}
 
-	helper.GoodResponse(w, http.StatusOK, "verification email is already send", "")
+	helper.GoodResponse(w, http.StatusOK, "verification email has been sent", "")
 }
 
 func (h *verificationTokenHandler) VerificationAccount(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		helper.BadResponse(w, http.StatusBadRequest, "")
+		helper.BadResponse(w, http.StatusBadRequest, "token not found")
 
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("token not found")
+		}
 		return
 	}
 
@@ -67,10 +80,14 @@ func (h *verificationTokenHandler) VerificationAccount(w http.ResponseWriter, r 
 	if err != nil {
 		if err.Error() == "token has expired" || err.Error() == "user is already verified" {
 			helper.BadResponse(w, http.StatusBadRequest, err.Error())
-			return
+		} else {
+			helper.BadResponse(w, http.StatusInternalServerError, "failed to verified account")
 		}
 
-		helper.BadResponse(w, http.StatusInternalServerError, "Gagal melakukan verifikasi akun")
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
+
 		return
 	}
 

@@ -28,11 +28,11 @@ func (s *userService) Register(ctx context.Context, email string, password strin
 	existingUser, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("something error with database,  %w", err)
-		}
+			return nil, fmt.Errorf("database error:  %w", err)
+		}	
 	}
 	if existingUser != nil {
-		return nil, errors.New("email already exist, use another email")
+		return nil, errors.New("email already registered")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

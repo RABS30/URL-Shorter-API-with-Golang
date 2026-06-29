@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"shorter-url/internal/domain"
@@ -38,25 +37,35 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request, p httprou
 	request.DisallowUnknownFields()
 	err := request.Decode(&req)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid request payload")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
 	if req.Email == "" || req.Password == "" {
 		helper.BadResponse(w, http.StatusBadRequest, "email and password are required")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("email and password are required")
+		}
 		return
 	}
 
 	ctx := r.Context()
 	user, err := h.UserService.Register(ctx, req.Email, req.Password)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		if err.Error() == "email already registered" {
+			helper.BadResponse(w, http.StatusConflict, "email already registered")
+		} else {
+			helper.BadResponse(w, http.StatusInternalServerError, "register failed")
+		}
 
-		helper.BadResponse(w, http.StatusBadRequest, err.Error())
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
@@ -75,15 +84,20 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request, p httprouter
 	request.DisallowUnknownFields()
 	err := request.Decode(&req)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
-
 		helper.BadResponse(w, http.StatusBadRequest, "invalid json format")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 
 	if req.Email == "" || req.Password == "" {
 		helper.BadResponse(w, http.StatusBadRequest, "email and password are required")
+
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError("email and password are required")
+		}
 		return
 	}
 
@@ -91,10 +105,11 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request, p httprouter
 
 	token, err := h.UserService.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		errorCtx := context.WithValue(r.Context(), middleware.ErrorLogKey, err)
-		*r = *r.WithContext(errorCtx)
+		helper.BadResponse(w, http.StatusUnauthorized, "invalid email or password")
 
-		helper.BadResponse(w, http.StatusUnauthorized, err.Error())
+		if wrapper, ok := w.(*middleware.ResponseWriterWrapper); ok {
+			wrapper.WriteError(err.Error())
+		}
 		return
 	}
 

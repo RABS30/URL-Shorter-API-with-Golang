@@ -51,16 +51,16 @@ func main() {
 
 	router.GET("/r/:shortCode", shortUrlHandler.AccessShortCode)
 
-	router.POST("/user/login", userHandler.Login)
-	router.POST("/user/register", userHandler.Register)
+	router.POST("/user/login", middleware.GuestOnly(JwtSecret)(userHandler.Login))
+	router.POST("/user/register", middleware.GuestOnly(JwtSecret)(userHandler.Register))
 	router.POST("/user/verify", verificationHandler.RequestVerification)
 	router.GET("/verify", verificationHandler.VerificationAccount)
 
 	router.POST("/forgot-password", passwordResethandler.ForgotPasswordHandler)
 	router.POST("/reset-password", passwordResethandler.ResetPasswordHandler)
 
-	router.POST("/api/urls", middleware.AuthMiddleware(JwtSecret)(middleware.CheckVerifiedUser(shortUrlHandler.Create)))
-	router.GET("/api/urls/:shortUrlId/analytics", middleware.AuthMiddleware(JwtSecret)(middleware.CheckVerifiedUser(clickEventHandler.FindByShortUrlId)))
+	router.POST("/api/urls", middleware.AuthMiddleware(JwtSecret)(middleware.VerifiedUserOnly(shortUrlHandler.Create)))
+	router.GET("/api/urls/:shortUrlId/analytics", middleware.AuthMiddleware(JwtSecret)(middleware.VerifiedUserOnly(clickEventHandler.FindByShortUrlId)))
 
 	logger := middleware.Logger(router)
 
