@@ -72,7 +72,7 @@ func Test_Create_Duplicate_Users(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "something wrong when create new data")
+	assert.ErrorContains(t, err, "insert user")
 	assert.ErrorContains(t, err, "23505")
 }
 
@@ -132,7 +132,7 @@ func Test_Update_Users_Fail(t *testing.T) {
 
 	assert.Nil(t, result)
 	assert.Error(t, err)
-	assert.ErrorContains(t, err, fmt.Sprintf("user dengan ID %d tidak ditemukan", inputData.Id))
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_Delete_Users_Pass(t *testing.T) {
@@ -172,7 +172,7 @@ func Test_Delete_Users_Fail(t *testing.T) {
 	repo := NewUserRepository(mockpool)
 	err = repo.Delete(ctx, id)
 
-	assert.ErrorContains(t, err, "there is no data deleted")
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindById_Users_Pass(t *testing.T) {
@@ -228,7 +228,7 @@ func Test_FindById_Users_Fail(t *testing.T) {
 	result, err := repo.FindById(ctx, id)
 
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "user dengan ID 99 tidak ditemukan")
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindByEmail_Users_Pass(t *testing.T) {
@@ -284,5 +284,5 @@ func Test_FindByEmail_Users_Fail(t *testing.T) {
 	result, err := repo.FindByEmail(ctx, email)
 
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "user not found")
+	assert.ErrorContains(t, err, "resource not found")
 }

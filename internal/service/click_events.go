@@ -19,7 +19,7 @@ func NewClickEventService(repo domain.ClickEventRepository) domain.ClickEventSer
 func (s *clickEventService) Create(ctx context.Context, clickEvent *domain.ClickEvent) (*domain.ClickEvent, error) {
 	result, err := s.repo.Create(ctx, clickEvent)
 	if err != nil {
-		return nil, fmt.Errorf("something error when create click event, %w", err)
+		return nil, fmt.Errorf("failed to create click event: %w", err)
 	}
 
 	return result, nil
@@ -28,7 +28,7 @@ func (s *clickEventService) Create(ctx context.Context, clickEvent *domain.Click
 func (s *clickEventService) FindByShortUrlId(ctx context.Context, shortUrlId int64, userId int64) ([]domain.ClickEvent, error) {
 	listEvent, err := s.repo.FindByShortUrlId(ctx, shortUrlId, userId)
 	if err != nil {
-		return nil, fmt.Errorf("something error when get list click event, %w", err)
+		return nil, fmt.Errorf("failed to get click events: %w", err)
 	}
 
 	return listEvent, nil

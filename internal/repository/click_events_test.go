@@ -67,7 +67,7 @@ func Test_Create_CreateEvent_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something wrong when create data in click event")
+	assert.Contains(t, err.Error(), "insert click event")
 
 	assert.NoError(t, mockPool.ExpectationsWereMet())
 }
@@ -86,7 +86,7 @@ func Test_FindByShortUrlId_Pass(t *testing.T) {
 		AddRow(int64(1), targetShortUrlId, "192.168.1.1", "Chrome", "Direct", dateExample).
 		AddRow(int64(2), targetShortUrlId, "192.168.1.2", "Safari", "https://github.com", dateExample)
 
-	queryRegex := `(?i)^SELECT\s+ce\.id,\s+ce\.short_url_id,\s+ce\.ip_address,\s+ce\.user_agent,\s+ce\.referer,\s+ce\.clicked_at\s+FROM\s+click_event\s+ce\s+INNER\s+JOIN\s+short_urls\s+su\s+ON\s+ce\.short_url_id\s+=\s+su\.id\s+WHERE\s+ce\.short_url_id\s+=\s+\$1\s+AND\s+su\.user_id\s+=\s+\$2$`
+	queryRegex := `(?i)^SELECT\s+ce\.id,\s+ce\.short_url_id,\s+ce\.ip_address,\s+ce\.user_agent,\s+ce\.referer,\s+ce\.clicked_at\s+FROM\s+click_events\s+ce\s+INNER\s+JOIN\s+short_urls\s+su\s+ON\s+ce\.short_url_id\s+=\s+su\.id\s+WHERE\s+ce\.short_url_id\s+=\s+\$1\s+AND\s+su\.user_id\s+=\s+\$2$`
 
 	mockPool.ExpectQuery(queryRegex).
 		WithArgs(targetShortUrlId, targetUserId). // Wajib menyertakan targetUserId ($2)
@@ -125,7 +125,7 @@ func Test_FindByShortUrlId_Fail_QueryError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, results)
-	assert.Contains(t, err.Error(), "something wrong when find click events by short code")
+	assert.Contains(t, err.Error(), "query short url by id")
 
 	assert.NoError(t, mockPool.ExpectationsWereMet())
 }

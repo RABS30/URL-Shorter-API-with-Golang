@@ -28,8 +28,9 @@ func (s *userService) Register(ctx context.Context, email string, password strin
 	existingUser, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("database error:  %w", err)
-		}	
+			// PERBAIKAN: Bersihkan spasi ganda sebelum %w rabs
+			return nil, fmt.Errorf("failed to check existing email: %w", err)
+		}
 	}
 	if existingUser != nil {
 		return nil, errors.New("email already registered")
@@ -37,7 +38,8 @@ func (s *userService) Register(ctx context.Context, email string, password strin
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt password, %w", err)
+		// PERBAIKAN: Ubah koma menjadi titik dua dan ganti kata encrypt menjadi hash rabs
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	newUser := &domain.User{
@@ -47,18 +49,22 @@ func (s *userService) Register(ctx context.Context, email string, password strin
 
 	result, err := s.repo.Create(ctx, newUser)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create new account, %w", err)
+		// PERBAIKAN: Format lowercase dan ubah koma menjadi titik dua rabs
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return result, nil
 }
 
 func (s *userService) Login(ctx context.Context, email string, password string) (string, error) {
-	invalidError := errors.New("Invalid email and password")
+	invalidError := errors.New("invalid email or password")
 
 	existingUser, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("cannot find email, %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", invalidError
+		}
+		return "", fmt.Errorf("failed to find user by email: %w", err)
 	}
 	if existingUser == nil {
 		return "", invalidError
@@ -79,7 +85,7 @@ func (s *userService) Login(ctx context.Context, email string, password string) 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(s.JwtSecret)
 	if err != nil {
-		return "", fmt.Errorf("failed to generated jwt token, %w", err)
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
 	}
 
 	return tokenString, nil

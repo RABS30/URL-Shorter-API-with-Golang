@@ -132,7 +132,7 @@ func Test_Delete_PasswordResetTokens_Fail(t *testing.T) {
 	err = repo.Delete(ctx, id)
 
 	assert.Error(t, err)
-	assert.ErrorContains(t, err, fmt.Sprintf("there is no data deleted, password reset token with ID %d not found", id))
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindByToken_PasswordResetTokens_Pass(t *testing.T) {
@@ -199,7 +199,7 @@ func Test_FindByToken_PasswordResetTokens_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.ErrorContains(t, err, "token not found")
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindByToken_PasswordResetTokens_Error(t *testing.T) {
@@ -223,5 +223,5 @@ func Test_FindByToken_PasswordResetTokens_Error(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something wrong when find password reset token by token")
+	assert.Contains(t, err.Error(), "query password reset tokens by token")
 }

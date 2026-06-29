@@ -129,7 +129,7 @@ func Test_Delete_ShortUrls_Fail(t *testing.T) {
 	err = repo.Delete(ctx, id)
 
 	assert.Error(t, err)
-	assert.ErrorContains(t, err, fmt.Sprintf("id %d not found", id))
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindById_ShortUrls_Pass(t *testing.T) {
@@ -200,7 +200,8 @@ func Test_FindById_ShortUrls_Fail(t *testing.T) {
 	result, err := repo.FindById(ctx, id)
 
 	assert.Nil(t, result)
-	assert.Nil(t, err)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "resource not found")
 }
 
 func Test_FindByUserId_ShortUrls_Pass(t *testing.T) {

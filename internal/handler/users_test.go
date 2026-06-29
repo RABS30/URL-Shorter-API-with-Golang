@@ -65,7 +65,7 @@ func Test_Register_ServiceError(t *testing.T) {
 	mockAuth := new(service.MockAuthService)
 	handler := NewUserHandler(mockAuth)
 
-	mockAuth.On("Register", mock.Anything, "duplicate@mail.com", "password123").Return(nil, errors.New("email already exists"))
+	mockAuth.On("Register", mock.Anything, "duplicate@mail.com", "password123").Return(nil, errors.New("email already registered"))
 
 	body := `{"email":"duplicate@mail.com", "password":"password123"}`
 	recorder := httptest.NewRecorder()
@@ -73,8 +73,8 @@ func Test_Register_ServiceError(t *testing.T) {
 
 	handler.Register(recorder, request, nil)
 
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-	assert.Contains(t, recorder.Body.String(), "email already exists")
+	assert.Equal(t, http.StatusConflict, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "email already registered")
 	mockAuth.AssertExpectations(t)
 }
 

@@ -35,7 +35,7 @@ func Test_ShortUrlService_Create_InvalidURL(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "URL format not valid")
+	assert.Contains(t, err.Error(), "invalid URL format")
 
 	// Database tidak boleh disentuh sama sekali jika format URL sudah cacat
 	mockRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
@@ -52,7 +52,7 @@ func Test_ShortUrlService_Create_RetryMaxThreeTimes(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "Failed to create short URL")
+	assert.Contains(t, err.Error(), "failed to create short URL after multiple attempts")
 
 	// SANGAT PENTING: Memastikan database benar-benar dicoba dipanggil sebanyak 3 kali (Looping)
 	mockRepo.AssertNumberOfCalls(t, "Create", 3)
@@ -80,7 +80,7 @@ func Test_ShortUrlService_GetByShortCode_NotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get data by short code")
+	assert.Contains(t, err.Error(), "failed to get short url by short code")
 	mockRepo.AssertExpectations(t)
 }
 

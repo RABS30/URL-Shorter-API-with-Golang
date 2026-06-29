@@ -28,7 +28,7 @@ func NewVerificationTokenService(repo domain.VerificationTokenRepository, users 
 func (s *verificationTokenService) SendVerificationMail(ctx context.Context, email string) error {
 	user, err := s.users.FindByEmail(ctx, email)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find user by email: %w", err)
 	}
 	if user.IsVerified {
 		return errors.New("user is verified")
@@ -36,7 +36,7 @@ func (s *verificationTokenService) SendVerificationMail(ctx context.Context, ema
 
 	token, err := helper.GenerateRandomToken(16)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate random token: %w", err)
 	}
 
 	context := struct {
@@ -53,12 +53,12 @@ func (s *verificationTokenService) SendVerificationMail(ctx context.Context, ema
 
 	_, err = s.repo.Create(ctx, verificationTokenData)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create verification token: %w", err)
 	}
 
 	err = s.emailService.SendEmailWithHTML(ctx, user.Email, context, "verification_account_mail.html")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func (s *verificationTokenService) SendVerificationMail(ctx context.Context, ema
 func (s *verificationTokenService) VerificationAccount(ctx context.Context, token string) error {
 	dataToken, err := s.repo.FindByToken(ctx, token)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find verification token: %w", err)
 	}
 	if time.Now().After(dataToken.ExpiredAt) {
 		return errors.New("token has expired")
@@ -75,7 +75,7 @@ func (s *verificationTokenService) VerificationAccount(ctx context.Context, toke
 
 	user, err := s.users.FindById(ctx, dataToken.UserId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find user by ID: %w", err)
 	}
 
 	if user.IsVerified {
@@ -84,12 +84,12 @@ func (s *verificationTokenService) VerificationAccount(ctx context.Context, toke
 
 	err = s.users.UpdateVerified(ctx, dataToken.UserId, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update user verified status: %w", err)
 	}
 
 	err = s.repo.DeleteByUserId(ctx, dataToken.UserId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete verification token after use: %w", err)
 	}
 
 	return nil

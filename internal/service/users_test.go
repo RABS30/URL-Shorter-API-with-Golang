@@ -40,7 +40,7 @@ func Test_Service_Register_EmailAlreadyExist(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "email already exist")
+	assert.Contains(t, err.Error(), "email already registered")
 
 	mockRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 }
@@ -74,7 +74,7 @@ func Test_Service_Login_WrongPasswordOrEmailNotFound(t *testing.T) {
 	token, err := svc.Login(context.Background(), "notfound@mail.com", "any-password")
 	assert.Error(t, err)
 	assert.Empty(t, token)
-	assert.Contains(t, err.Error(), "Invalid email and password")
+	assert.Contains(t, err.Error(), "invalid email or password")
 
 	mockRepo.On("FindByEmail", mock.Anything, "user@mail.com").Return(&domain.User{
 		Id:           1,
@@ -85,5 +85,5 @@ func Test_Service_Login_WrongPasswordOrEmailNotFound(t *testing.T) {
 	token2, err2 := svc.Login(context.Background(), "user@mail.com", "wrong-password")
 	assert.Error(t, err2)
 	assert.Empty(t, token2)
-	assert.Contains(t, err2.Error(), "Invalid email and password")
+	assert.Contains(t, err2.Error(), "invalid email or password")
 }

@@ -88,7 +88,7 @@ func Test_Create_VerificationTokens_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something wrong when create verification token")
+	assert.Contains(t, err.Error(), "insert verification token")
 }
 
 func Test_Delete_VerificationTokens_Pass(t *testing.T) {
@@ -132,7 +132,7 @@ func Test_Delete_VerificationTokens_Fail(t *testing.T) {
 	err = repo.Delete(ctx, id)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "verification token with id 99 not found")
+	assert.Contains(t, err.Error(), "resource not found")
 }
 
 func Test_FindByToken_VerificationTokens_Pass(t *testing.T) {
@@ -195,7 +195,7 @@ func Test_FindByToken_VerificationTokens_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "verification token not found")
+	assert.Contains(t, err.Error(), "resource not found")
 }
 
 func Test_FindByToken_VerificationTokens_Error(t *testing.T) {
@@ -219,5 +219,5 @@ func Test_FindByToken_VerificationTokens_Error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 
-	assert.Contains(t, err.Error(), "something wrong when find verification token by token ")
+	assert.Contains(t, err.Error(), "query verification token by token")
 }

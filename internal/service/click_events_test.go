@@ -41,7 +41,7 @@ func Test_Create_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something error when create click event")
+	assert.Contains(t, err.Error(), "failed to create click event")
 	mockRepo.AssertExpectations(t)
 }
 
@@ -82,6 +82,6 @@ func Test_FindByShortUrlId_Fail(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "something error when get list click event")
+	assert.Contains(t, err.Error(), "failed to get click events")
 	mockRepo.AssertExpectations(t)
 }

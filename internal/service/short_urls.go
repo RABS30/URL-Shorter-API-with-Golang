@@ -21,11 +21,9 @@ func NewShortUrlService(repo domain.ShortUrlsRepository) domain.ShortUrlsService
 }
 
 func (s *shortUrlsService) CreateShortUrl(ctx context.Context, userId int64, originalUrl string, expiredAt time.Time) (*domain.ShortUrl, error) {
-
 	_, err := url.ParseRequestURI(originalUrl)
-
-	if err != nil { 	
-		return nil, fmt.Errorf("URL format not valid: %w", err)
+	if err != nil {     
+		return nil, fmt.Errorf("invalid URL format: %w", err)
 	}
 
 	for range 3 {
@@ -47,13 +45,14 @@ func (s *shortUrlsService) CreateShortUrl(ctx context.Context, userId int64, ori
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to create short URL. Please recreate. %w", err)
+	// PERBAIKAN: Format error lowercase dan seragam tanpa titik rabs
+	return nil, fmt.Errorf("failed to create short URL after multiple attempts: %w", err)
 }
 
 func (s *shortUrlsService) DeleteShortUrl(ctx context.Context, id int64) error {
 	err := s.repo.Delete(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to Delete with ID %d. %w", id, err)
+		return fmt.Errorf("failed to delete short url with ID %d: %w", id, err)
 	}
 
 	return nil
@@ -62,7 +61,7 @@ func (s *shortUrlsService) DeleteShortUrl(ctx context.Context, id int64) error {
 func (s *shortUrlsService) GetShortUrlById(ctx context.Context, id int64) (*domain.ShortUrl, error) {
 	result, err := s.repo.FindById(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get short url with ID %d. : %w", id, err)
+		return nil, fmt.Errorf("failed to get short url with ID %d: %w", id, err)
 	}
 
 	return result, nil
@@ -71,7 +70,7 @@ func (s *shortUrlsService) GetShortUrlById(ctx context.Context, id int64) (*doma
 func (s *shortUrlsService) GetShortUrlsByUserId(ctx context.Context, userId int64) ([]domain.ShortUrl, error) {
 	rows, err := s.repo.FindByUserId(ctx, userId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data by user id %d, %w", userId, err)
+		return nil, fmt.Errorf("failed to get short urls by user ID %d: %w", userId, err)
 	}
 
 	return rows, nil
@@ -80,7 +79,7 @@ func (s *shortUrlsService) GetShortUrlsByUserId(ctx context.Context, userId int6
 func (s *shortUrlsService) GetShortUrlByShortCode(ctx context.Context, shortCode string) (*domain.ShortUrl, error) {
 	result, err := s.repo.FindByShortCode(ctx, shortCode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data by short code %s, %w ", shortCode, err)
+		return nil, fmt.Errorf("failed to get short url by short code %s: %w", shortCode, err)
 	}
 
 	return result, nil

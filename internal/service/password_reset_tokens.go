@@ -31,7 +31,7 @@ func NewPasswordResetTokensService(repo domain.PasswordResetTokensRepository, us
 func (s *passwordResetTokensService) RequestResetPassword(ctx context.Context, email string) error {
 	user, err := s.users.FindByEmail(ctx, email)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find user by email: %w", err)
 	}
 	if user == nil {
 		return nil
@@ -39,7 +39,7 @@ func (s *passwordResetTokensService) RequestResetPassword(ctx context.Context, e
 
 	token, err := helper.GenerateRandomToken(16)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate random token: %w", err)
 	}
 
 	var tokenUser = &domain.PasswordResetTokens{
@@ -50,24 +50,24 @@ func (s *passwordResetTokensService) RequestResetPassword(ctx context.Context, e
 
 	_, err = s.repo.Create(ctx, tokenUser)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create password reset token: %w", err)
 	}
 
 	resetURL := fmt.Sprintf("%s/reset-password?token=%s", s.baseUrl, token)
 
 	subject := "Permintaan Reset Password Akun Anda"
 	body := fmt.Sprintf(`
-		<h3>Halo, %s</h3>
-		<p>Kami menerima permintaan untuk mereset password akun Anda.</p>
-		<p>Silakan klik link di bawah ini untuk melanjutkan proses reset password:</p>
-		<p><a href="%s" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password Saya</a></p>
-		<br>
-		<p><i>Link ini hanya berlaku selama 15 menit. Jika Anda tidak merasa melakukan permintaan ini, abaikan email ini.</i></p>
-	`, user.Email, resetURL)
+        <h3>Halo, %s</h3>
+        <p>Kami menerima permintaan untuk mereset password akun Anda.</p>
+        <p>Silakan klik link di bawah ini untuk melanjutkan proses reset password:</p>
+        <p><a href="%s" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password Saya</a></p>
+        <br>
+        <p><i>Link ini hanya berlaku selama 15 menit. Jika Anda tidak merasa melakukan permintaan ini, abaikan email ini.</i></p>
+    `, user.Email, resetURL)
 
 	err = s.emailService.SendEmail(ctx, user.Email, subject, body)
 	if err != nil {
-		return fmt.Errorf("failed to send email, %w", err)
+		return fmt.Errorf("failed to send email: %w", err)
 	}
 
 	return nil
@@ -76,7 +76,7 @@ func (s *passwordResetTokensService) RequestResetPassword(ctx context.Context, e
 func (s *passwordResetTokensService) ExecuteResetPassword(ctx context.Context, token string, password1 string, password2 string) error {
 	userToken, err := s.repo.FindByToken(ctx, token)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find token: %w", err)
 	}
 	if time.Now().After(userToken.ExpiredAt) {
 		return errors.New("token expired")
@@ -87,17 +87,17 @@ func (s *passwordResetTokensService) ExecuteResetPassword(ctx context.Context, t
 
 	hashedPassword, err := s.hasher.Hash(ctx, password1)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	err = s.users.UpdatePassword(ctx, userToken.UserId, hashedPassword)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update password: %w", err)
 	}
 
 	err = s.repo.DeleteByUserId(ctx, userToken.UserId)
 	if err != nil {
-		log.Print(err.Error())
+		log.Printf("failed to delete token after reset: %v", err)
 	}
 
 	return nil
